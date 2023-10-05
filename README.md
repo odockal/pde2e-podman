@@ -1,8 +1,8 @@
 # pde2e-podman
 Podman Desktop E2E tests podman engine preparation on windows and mac OS systems.
-Download given podman client, extract it and put on the PATH. Initalize the machine and start it if necessary.
 
 # Usage
+Download given podman client, extract it and put on the PATH. Initalize the machine and start it if necessary.
 
 ## Run the image examples
 
