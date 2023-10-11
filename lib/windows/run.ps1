@@ -35,9 +35,12 @@ Write-Host "Podman desktop E2E - podman nightly install script is being run..."
 write-host "Switching to a target folder: " $targetFolder
 cd $targetFolder
 write-host "Create a resultsFolder in targetFolder: $resultsFolder"
-mkdir $resultsFolder
+mkdir -p $resultsFolder
 $workingDir=Get-Location
 write-host "Working location: " $workingDir
+
+# Output file for built podman desktop binary
+$outputFile = "podman-location.log"
 
 # Force install of WSL
 wsl -l -v
@@ -45,8 +48,8 @@ $installed=$?
 
 if (!$installed) {
     Write-Host "installing wsl2"
-    wsl --install --no-distribution
     wsl --set-default-version 2
+    wsl --install --no-distribution
     $distroMissing=$?
     if($distroMissing) {
         write-host "Wsl enabled, but distro is missing, installing default distro..."
@@ -58,17 +61,21 @@ if (-not (Command-Exists "podman")) {
     # Download and install the nightly podman for windows
     $podmanFolder="podman-remote-release-windows_amd64"
     write-host "Downloading podman archive from $downloadUrl"
-    Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman-nightly.zip"
-    if (-not (Test-Path -Path "$toolsInstallDir\podman-nightly" -PathType Container)) {
-        Expand-Archive -Path "$toolsInstallDir\podman-nightly.zip" -DestinationPath $toolsInstallDir -Force
+    if (-not (Test-Path -Path "$toolsInstallDir\podman" -PathType Container)) {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.zip"
+        Expand-Archive -Path "$toolsInstallDir\podman.zip" -DestinationPath $toolsInstallDir -Force
     }
     $env:Path += ";$toolsInstallDir\podman-$version\usr\bin"
+    # store the podman installation
+    cd "$workingDir\$resultsFolder"
+    write-host "Podman installation path will be stored in $outputFile"
+    "$toolsInstallDir\podman-$version\usr\bin" | Out-File -FilePath $outputFile -NoNewline
 }
 
 # Setup podman machine in the host system
 if ($initialize -eq "1") {
     $flags=''
-    if ($rootful) {
+    if ($rootful -eq "1") {
         $flags="--rootful"
     }
     write-host "Initializing podman machine, command: podman machine init $flags"
