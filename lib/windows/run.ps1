@@ -39,6 +39,12 @@ mkdir -p $resultsFolder
 $workingDir=Get-Location
 write-host "Working location: " $workingDir
 
+# Specify the user profile directory
+$userProfile = $env:USERPROFILE
+
+# Specify the shared tools directory
+$toolsInstallDir = Join-Path $userProfile 'tools'
+
 # Output file for built podman desktop binary
 $outputFile = "podman-location.log"
 
