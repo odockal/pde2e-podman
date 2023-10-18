@@ -12,7 +12,7 @@ param(
     [Parameter(HelpMessage = 'Start Podman machine, default is 0/false')]
     $start='0',
     [Parameter(HelpMessage = 'Podman machine rootful flag, default 0/false')]
-    $rootful='0'
+    $rootful='0',
     [Parameter(HelpMessage = 'Install WSL, default 0/false')]
     $installWSL='0'
 )
