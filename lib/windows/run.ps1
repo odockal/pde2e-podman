@@ -13,6 +13,8 @@ param(
     $start='0',
     [Parameter(HelpMessage = 'Podman machine rootful flag, default 0/false')]
     $rootful='0'
+    [Parameter(HelpMessage = 'Install WSL, default 0/false')]
+    $installWSL='0'
 )
 
 write-host "Print out script parameters, usefull for debugging..."
@@ -49,17 +51,19 @@ $toolsInstallDir = Join-Path $userProfile 'tools'
 $outputFile = "podman-location.log"
 
 # Force install of WSL
-wsl -l -v
-$installed=$?
+if ($installWSL -eq "1") {
+    wsl -l -v
+    $installed=$?
 
-if (!$installed) {
-    Write-Host "installing wsl2"
-    wsl --set-default-version 2
-    wsl --install --no-distribution
-    $distroMissing=$?
-    if($distroMissing) {
-        write-host "Wsl enabled, but distro is missing, installing default distro..."
-        wsl --install --no-launch
+    if (!$installed) {
+        Write-Host "installing wsl2"
+        wsl --set-default-version 2
+        wsl --install --no-distribution
+        $distroMissing=$?
+        if($distroMissing) {
+            write-host "Wsl enabled, but distro is missing, installing default distro..."
+            wsl --install --no-launch
+        }
     }
 }
 
