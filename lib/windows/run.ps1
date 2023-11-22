@@ -6,7 +6,7 @@ param(
     [Parameter(HelpMessage = 'Podman Download URL')]
     $downloadUrl='https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-windows_amd64.zip',
     [Parameter(HelpMessage='Podman version')]
-    $version='4.8.0-dev',
+    $version='5.0.0-dev',
     [Parameter(HelpMessage = 'Initialize podman machine, default is 0/false')]
     $initialize='0',
     [Parameter(HelpMessage = 'Start Podman machine, default is 0/false')]
@@ -75,11 +75,13 @@ if (-not (Command-Exists "podman")) {
         Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.zip"
         Expand-Archive -Path "$toolsInstallDir\podman.zip" -DestinationPath $toolsInstallDir -Force
     }
-    $env:Path += ";$toolsInstallDir\podman-$version\usr\bin"
+    $podmanPath="$toolsInstallDir\podman-$version\usr\bin"
+    write-host "Adding Podman location: $podmanPath, on the PATH"
+    $env:Path += ";podmanPath"
     # store the podman installation
     cd "$workingDir\$resultsFolder"
     write-host "Podman installation path will be stored in $outputFile"
-    "$toolsInstallDir\podman-$version\usr\bin" | Out-File -FilePath $outputFile -NoNewline
+    "$podmanPath" | Out-File -FilePath $outputFile -NoNewline
 }
 
 # Setup podman machine in the host system
