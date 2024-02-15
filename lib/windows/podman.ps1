@@ -13,6 +13,8 @@ param(
     $start='0',
     [Parameter(HelpMessage = 'Podman machine rootful flag, default 0/false')]
     $rootful='0',
+    [Parameter(HelpMessage = 'Podman machine user-mode-networking flag, default 0/false')]
+    $userNetworking='0'
     [Parameter(HelpMessage = 'Install WSL, default 0/false')]
     $installWSL='0'
 )
@@ -68,7 +70,7 @@ if ($installWSL -eq "1") {
 }
 
 if (-not (Command-Exists "podman")) {
-    # Download and install the nightly podman for windows
+    # Download and install the (nightly) podman for windows
     $podmanFolder="podman-remote-release-windows_amd64"
     write-host "Downloading podman archive from $downloadUrl"
     if (-not (Test-Path -Path "$toolsInstallDir\podman" -PathType Container)) {
@@ -77,7 +79,7 @@ if (-not (Command-Exists "podman")) {
     }
     $podmanPath="$toolsInstallDir\podman-$version\usr\bin"
     write-host "Adding Podman location: $podmanPath, on the PATH"
-    $env:Path += ";podmanPath"
+    $env:Path += ";$podmanPath"
     # store the podman installation
     cd "$workingDir\$resultsFolder"
     write-host "Podman installation path will be stored in $outputFile"
@@ -86,17 +88,22 @@ if (-not (Command-Exists "podman")) {
 
 # Setup podman machine in the host system
 if ($initialize -eq "1") {
-    $flags=''
+    $flags = ""
     if ($rootful -eq "1") {
-        $flags="--rootful"
+        $flags += "--rootful "
     }
+    if ($userNetworking -eq "1") {
+        $flags += "--user-mode-networking "
+    }
+    $flags = $flags.Trim()
+    $flagsArray = $flags -split ' '
     write-host "Initializing podman machine, command: podman machine init $flags"
     $logFile = "$workingDir\$resultsFolder\podman-machine-init.log"
     "podman machine init $flags" > $logFile
     if($flags) {
         # If more flag will be necessary, we have to consider composing the command other way
         # ie. https://stackoverflow.com/questions/6604089/dynamically-generate-command-line-command-then-invoke-using-powershell
-        podman machine init $flags >> $logFile
+        podman machine init $flagsArray >> $logFile
     } else {
         podman machine init >> $logFile
     }
@@ -106,8 +113,6 @@ if ($initialize -eq "1") {
         podman machine start >> $logFile
     }
     podman machine ls >> $logFile
-} else {
-    write-host "Podman installed, no machine prepared..."
 }
 
 write-host "Script finished..."
