@@ -109,7 +109,7 @@ if ($initialize -eq "1") {
     }
     if ($start -eq "1") {
         write-host "Starting podman machine..."
-        "podman machine start" >> $logfile
+        "podman machine start" >> $logFile
         podman machine start >> $logFile
     }
     podman machine ls >> $logFile

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 downloadUrl="https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-darwin_arm64.zip"
+version="5.0.0-dev"
 targetFolder=""
 resultsFolder="results"
-version="5.0.0-dev"
 initialize=0
 start=0
 rootful=0
@@ -61,20 +61,36 @@ fi
 # Check if podman command exists
 if ! command -v podman &> /dev/null; then
     # Download and install the Podman release
-    podman_folder="podman-$version"
+    podmanFolder="podman-$version"
+    # Archive zip only contains podman client, not a qemu binary
     echo "Downloading podman archive from $downloadUrl"
-    if [ ! -d "$toolsInstallDir/$podman_folder" ]; then
-        curl -o "$toolsInstallDir/podman.zip" -L "$downloadUrl"
+    curl -o "$toolsInstallDir/podman-archive" -L $downloadUrl
+    podmanPath=''
+    fileType=$(file -b --mime-type "$toolsInstallDir/podman-archive")
+    echo "Archive file type is: $fileType"
+    if [ $fileType == "application/zip" ]; then
+        if [ -d "$toolsInstallDir/$podmanFolder" ]; then
+            rm -rf "$toolsInstallDir/$podmanFolder"
+        fi
+        mv $toolsInstallDir/podman-archive $toolsInstallDir/podman.zip
         unzip -o "$toolsInstallDir/podman.zip" -d "$toolsInstallDir"
+        podmanPath="$toolsInstallDir/$podmanFolder/usr/bin"
+    elif [ $fileType == "application/x-xar" ]; then
+        # use pkg installer
+        mv $toolsInstallDir/podman-archive $toolsInstallDir/podman.pkg
+        sudo installer -pkg $toolsInstallDir/podman.pkg -target /opt
+        podmanPath=/opt/podman/bin
     else
-        echo "Podman installation in $toolsInstallDir/$podman_folder already exists"
+        echo "The file type is nethier ZIP or PKG, exiting"
+        exit 1
     fi
-    podman_path="$toolsInstallDir/$podman_folder/usr/bin"
-    echo "Adding Podman location: $podman_path, to the PATH"
-    export PATH="$podman_path:$PATH"
+    echo "Adding Podman location: $podmanPath, to the PATH"
+    export PATH="$podmanPath:$PATH"
     # store the podman installation path to be exported out of a container
-    echo "Podman installation path will be stored in $outputFile"
-    echo "$podman_path" > "$workingDir/$resultsFolder/$outputFile"
+    echo "Podman installation path $podmanPath will be stored in $outputFile"
+    echo "$podmanPath" > "$workingDir/$resultsFolder/$outputFile"
+    # test podman on the PATH and do not throw error
+    podman version 2>&1 | grep libpod
 fi
 
 
@@ -84,25 +100,22 @@ if (( initialize == 1 )); then
     if (( rootful == 1 )); then
         flags+="--rootful "
     fi
-    if (( userNetworking == 1 )); then
-        flags+="--user-mode-networking "
-    fi
     flags=$(echo "$flags" | awk '{$1=$1};1')
     flagsArray=($flags)
     echo "Initializing podman machine, command: podman machine init $flags"
     logFile="$workingDir/$resultsFolder/podman-machine-init.log"
     echo "podman machine init $flags" > "$logFile"
     if (( ${#flagsArray[@]} > 0 )); then
-        podman machine init "${flagsArray[@]}" >> "$logFile"
+        podman machine init "${flagsArray[@]}" 2>&1 | tee -a "$logFile"
     else
-        podman machine init >> "$logFile"
+        podman machine init 2>&1 | tee -a "$logFile"
     fi
     if (( start == 1 )); then
         echo "Starting podman machine..."
-        echo "podman machine start" >> "$logfile"
-        podman machine start >> "$logFile"
+        echo "podman machine start" >> "$logFile"
+        podman machine start 2>&1 | tee -a "$logFile"
     fi
-    podman machine ls >> "$logFile"
+    podman machine ls 2>&1 | tee -a "$logFile"
 fi
 
 echo "Script finished..."
