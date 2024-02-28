@@ -10,4 +10,8 @@ echo "### Building and pushing windows image ###"
 OS=windows make oci-build
 OS=windows make oci-push
 
+# Push tekton task image
+echo "### Building and pushing tekton task image ###"
+make tkn-push
+
 
