@@ -78,12 +78,17 @@ if (-not (Command-Exists "podman")) {
         Expand-Archive -Path "$toolsInstallDir\podman.zip" -DestinationPath $toolsInstallDir -Force
     }
     $podmanPath="$toolsInstallDir\podman-$version\usr\bin"
-    write-host "Adding Podman location: $podmanPath, on the PATH"
-    $env:Path += ";$podmanPath"
-    # store the podman installation
-    cd "$workingDir\$resultsFolder"
-    write-host "Podman installation path will be stored in $outputFile"
-    "$podmanPath" | Out-File -FilePath $outputFile -NoNewline
+    if (Test-Path -Path $podmanPath) {
+        write-host "Adding Podman location: $podmanPath, on the PATH"
+        $env:Path += ";$podmanPath"
+        # store the podman installation
+        cd "$workingDir\$resultsFolder"
+        write-host "Podman installation path will be stored in $outputFile"
+        "$podmanPath" | Out-File -FilePath $outputFile -NoNewline
+    } else {
+        Write-Host "The path $podmanPath does not exist, verify downloadUrl and version"
+        Throw "Expected Podman Path does not exist"
+    }
 }
 
 # Setup podman machine in the host system
