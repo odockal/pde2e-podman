@@ -14,7 +14,7 @@ param(
     [Parameter(HelpMessage = 'Podman machine rootful flag, default 0/false')]
     $rootful='0',
     [Parameter(HelpMessage = 'Podman machine user-mode-networking flag, default 0/false')]
-    $userNetworking='0'
+    $userNetworking='0',
     [Parameter(HelpMessage = 'Install WSL, default 0/false')]
     $installWSL='0'
 )
