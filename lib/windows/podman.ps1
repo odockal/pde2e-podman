@@ -48,6 +48,10 @@ $userProfile = $env:USERPROFILE
 
 # Specify the shared tools directory
 $toolsInstallDir = Join-Path $userProfile 'tools'
+if (-not(Test-Path -Path $toolsInstallDir)) {
+    write-host "Tools directory does not exists, creating..."
+    mkdir -p $toolsInstallDir
+}
 
 # Output file for built podman desktop binary
 $outputFile = "podman-location.log"
