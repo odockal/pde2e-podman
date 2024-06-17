@@ -1,7 +1,7 @@
 #!/bin/bash
 
 downloadUrl="https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-darwin_arm64.zip"
-version="5.0.0-dev"
+version="5.2.0-dev"
 targetFolder=""
 resultsFolder="results"
 initialize=0
@@ -21,12 +21,6 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
-
-Download_PD() {
-    echo "Downloading Podman Desktop from $pdUrl"
-    curl -L "$pdUrl" -o pd.exe
-}
-
 
 echo "Podman desktop E2E Podman script is being run..."
 
@@ -60,8 +54,7 @@ fi
 # Get Podman
 # Check if podman command exists
 if ! command -v podman &> /dev/null; then
-    # Download and install the Podman release
-    podmanFolder="podman-$version"
+    # Download and install Podman
     # Archive zip only contains podman client, not a qemu binary
     echo "Downloading podman archive from $downloadUrl"
     curl -o "$toolsInstallDir/podman-archive" -L $downloadUrl
@@ -69,26 +62,30 @@ if ! command -v podman &> /dev/null; then
     fileType=$(file -b --mime-type "$toolsInstallDir/podman-archive")
     echo "Archive file type is: $fileType"
     if [ $fileType == "application/zip" ]; then
-        if [ -d "$toolsInstallDir/$podmanFolder" ]; then
-            rm -rf "$toolsInstallDir/$podmanFolder"
+        if [ -d "$toolsInstallDir/podman" ]; then
+            rm -rf "$toolsInstallDir/podman"
         fi
+        mkdir -p $toolsInstallDir/podman
         mv $toolsInstallDir/podman-archive $toolsInstallDir/podman.zip
-        unzip -o "$toolsInstallDir/podman.zip" -d "$toolsInstallDir"
-        podmanPath="$toolsInstallDir/$podmanFolder/usr/bin"
+        unzip -o "$toolsInstallDir/podman.zip" -d "$toolsInstallDir/podman"
+        podmanFolder=$(ls $toolsInstallDir/podman)
+        podmanPath="$toolsInstallDir/podman/$podmanFolder/usr/bin"
     elif [ $fileType == "application/x-xar" ]; then
         # use pkg installer
         mv $toolsInstallDir/podman-archive $toolsInstallDir/podman.pkg
         sudo installer -pkg $toolsInstallDir/podman.pkg -target /opt
         podmanPath=/opt/podman/bin
     else
-        echo "The file type is nethier ZIP or PKG, exiting"
+        echo "The file type is neither ZIP or PKG, exiting"
         exit 1
     fi
-    echo "Adding Podman location: $podmanPath, to the PATH"
-    export PATH="$podmanPath:$PATH"
-    # store the podman installation path to be exported out of a container
-    echo "Podman installation path $podmanPath will be stored in $outputFile"
-    echo "$podmanPath" > "$workingDir/$resultsFolder/$outputFile"
+    if [ -e $podmanPath ]; then
+        echo "Adding Podman location: $podmanPath, to the PATH"
+        export PATH="$podmanPath:$PATH"
+        # store the podman installation path to be exported out of a container
+        echo "Podman installation path $podmanPath will be stored in $outputFile"
+        echo "$podmanPath" > "$workingDir/$resultsFolder/$outputFile"
+    fi
     # test podman on the PATH and do not throw error
     podman version 2>&1 | grep libpod
 fi
