@@ -5,8 +5,6 @@ param(
     $resultsFolder="results",
     [Parameter(HelpMessage = 'Podman Download URL')]
     $downloadUrl='https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-windows_amd64.zip',
-    [Parameter(HelpMessage='Podman version')]
-    $version='5.0.0-dev',
     [Parameter(HelpMessage = 'Initialize podman machine, default is 0/false')]
     $initialize='0',
     [Parameter(HelpMessage = 'Start Podman machine, default is 0/false')]
@@ -17,6 +15,8 @@ param(
     $userNetworking='0',
     [Parameter(HelpMessage = 'Install WSL, default 0/false')]
     $installWSL='0'
+    [Parameter(HelpMessage = 'Run smoke test for podman machine 0/false')]
+    $smokeTests='0'
 )
 
 write-host "Print out script parameters, usefull for debugging..."
@@ -79,9 +79,13 @@ if (-not (Command-Exists "podman")) {
     write-host "Downloading podman archive from $downloadUrl"
     if (-not (Test-Path -Path "$toolsInstallDir\podman" -PathType Container)) {
         Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.zip"
-        Expand-Archive -Path "$toolsInstallDir\podman.zip" -DestinationPath $toolsInstallDir -Force
+        mkdir -p "$toolsInstallDir\podman"
+        Expand-Archive -Path "$toolsInstallDir\podman.zip" -DestinationPath "$toolsInstallDir\podman" -Force
     }
-    $podmanPath="$toolsInstallDir\podman-$version\usr\bin"
+    # we need to find out the folder name extracted from archive, could be podman-5.1.0 or podman-5.2.0-dev
+    $podmanFolderName=ls "$toolsInstallDir\podman" -Name
+    write-host "Extracted Podman Installation folder found: $podmanFolderName"
+    $podmanPath="$toolsInstallDir\podman\$podmanFolderName\usr\bin"
     if (Test-Path -Path $podmanPath) {
         write-host "Adding Podman location: $podmanPath, on the PATH"
         $env:Path += ";$podmanPath"
@@ -91,7 +95,7 @@ if (-not (Command-Exists "podman")) {
         "$podmanPath" | Out-File -FilePath $outputFile -NoNewline
     } else {
         Write-Host "The path $podmanPath does not exist, verify downloadUrl and version"
-        Throw "Expected Podman Path does not exist"
+        Throw "Expected Podman Path: $podmanPath does not exist"
     }
 }
 
@@ -122,6 +126,13 @@ if ($initialize -eq "1") {
         podman machine start >> $logFile
     }
     podman machine ls >> $logFile
+
+    ## Podman Machine smoke tests
+    # the tests expect podman machine to be up
+    if ($smokeTests -eq "1") {
+        $testsLogFile = "$workingDir\$resultsFolder\podman-machine-tests.log"
+        # TODO: include basic tests for podman machine verification 
+    }
 }
 
 write-host "Script finished..."
