@@ -5,6 +5,8 @@ param(
     $resultsFolder="results",
     [Parameter(HelpMessage = 'Podman Download URL')]
     $downloadUrl='https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-windows_amd64.zip',
+    [Parameter(HelpMessage='Podman version')]
+    $version='5.2.0-dev',
     [Parameter(HelpMessage = 'Initialize podman machine, default is 0/false')]
     $initialize='0',
     [Parameter(HelpMessage = 'Start Podman machine, default is 0/false')]
@@ -14,7 +16,7 @@ param(
     [Parameter(HelpMessage = 'Podman machine user-mode-networking flag, default 0/false')]
     $userNetworking='0',
     [Parameter(HelpMessage = 'Install WSL, default 0/false')]
-    $installWSL='0'
+    $installWSL='0',
     [Parameter(HelpMessage = 'Run smoke test for podman machine 0/false')]
     $smokeTests='0'
 )
