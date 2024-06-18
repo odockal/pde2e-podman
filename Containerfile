@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.authors="Ondrej Dockal<odockal@redhat.com>"
 # Expects one of windows or darwin as builds args
 ARG OS
 
-ENV ASSETS_FOLDER=/opt/pde2e-runner \
+ENV ASSETS_FOLDER=/opt/pde2e-podman \
     OS=${OS}
 
 COPY /lib/${OS}/* ${ASSETS_FOLDER}/
