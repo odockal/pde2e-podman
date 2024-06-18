@@ -9,7 +9,6 @@ metadata:
     dev.lifecycle.io/phase: testing
   annotations:
     tekton.dev/pipelines.minVersion: "0.24.x"
-<<<<<<< HEAD
     tekton.dev/categories: podman-desktop, podman
     tekton.dev/tags: podman-desktop, podman, testing
     tekton.dev/displayName: "Podman Preparation Task"
@@ -17,15 +16,6 @@ metadata:
 spec:
   description: >-
     This task can setup podman and podman machine on the target host machine
-=======
-    tekton.dev/categories: podman-desktop
-    tekton.dev/tags: podman-desktop, testing
-    tekton.dev/displayName: "Podman Desktop E2E Tests with Podman installer"
-    tekton.dev/platforms: "linux/amd64"
-spec:
-  description: >-
-    This task can download and install podman into host machine and setup podman machine
->>>>>>> db61cf8 (Create a tekton task from the pde2e-podman container)
 
   workspaces:
   - name: pipelines-data
