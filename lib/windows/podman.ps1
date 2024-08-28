@@ -89,7 +89,8 @@ if (-not (Command-Exists "podman")) {
     write-host "Extracted Podman Installation folder found: $podmanFolderName"
     $podmanPath="$toolsInstallDir\podman\$podmanFolderName\usr\bin"
     if (Test-Path -Path $podmanPath) {
-        write-host "Adding Podman location: $podmanPath, on the PATH"
+        write-host "Adding Podman location: $podmanPath, on the User PATH"
+        [System.Environment]::SetEnvironmentVariable('PATH', ([System.Environment]::GetEnvironmentVariable('PATH', 'User') + $podmanPath) -join ';', 'User')
         $env:Path += ";$podmanPath"
         # store the podman installation
         cd "$workingDir\$resultsFolder"
