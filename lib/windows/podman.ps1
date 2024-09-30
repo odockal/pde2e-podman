@@ -90,16 +90,20 @@ try {
         $scriptContent | Set-Content -Path $tempScriptFile
 
         # Start the process as admin and run the temporary script file
-        $process = $null
-        if ($WaitForCommand) {
-        write-host "Starting process with script..."
         $process = Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-File", $tempScriptFile -Verb RunAs -PassThru
-        $process.WaitForExit($WaitTimeout * 1000)
-        if ($process.ExitCode -eq 0) {
-            Write-Host "Process completed successfully."
-            Write-Host "Process ID: $($process.Id)"
+        $waitResult = $null
+        if ($WaitForCommand) {
+            write-host "Starting process with script awaiting until it is finished..."
+            $waitResult = $process.WaitForExit()
         } else {
-            Write-Host "Process failed with exit code: $($process.ExitCode)"
+            write-host "Starting process with script awaiting for $WaitTimeout sec"
+            $waitResult = $process.WaitForExit($WaitTimeout * 1000)
+        }
+        Write-Host "Process ID: $($process.Id)"
+        if ($waitResult) {
+            Write-Host "Process completed waiting successfully."
+        } else {
+            Write-Host "Process failed waiting after with exit code: $($process.ExitCode)"
         }
 
     } else {
@@ -180,7 +184,9 @@ if (-not (Command-Exists "podman")) {
     # Download and install the (nightly) podman for windows
     # Installation of the zip podman achive
     $extension = [IO.Path]::GetExtension($downloadUrl)
-    if ($extesnion -eq '.zip') {
+    $podmanProgramFiles="$env:ProgramFiles\RedHat\Podman\"
+    $podmanPath=""
+    if ($extension -eq '.zip') {
         $podmanFolder="podman-remote-release-windows_amd64"
         write-host "Downloading podman archive from $downloadUrl"
         if (-not (Test-Path -Path "$toolsInstallDir\podman" -PathType Container)) {
@@ -192,27 +198,20 @@ if (-not (Command-Exists "podman")) {
         $podmanFolderName=ls "$toolsInstallDir\podman" -Name
         write-host "Extracted Podman Installation folder found: $podmanFolderName"
         $podmanPath="$toolsInstallDir\podman\$podmanFolderName\usr\bin"
-        if (Test-Path -Path $podmanPath) {
-            write-host "Adding Podman location: $podmanPath, on the User PATH"
-            [System.Environment]::SetEnvironmentVariable('PATH', ([System.Environment]::GetEnvironmentVariable('PATH', 'User') + $podmanPath) -join ';', 'User')
-            $env:Path += ";$podmanPath"
-
-            # Make the podman available for the every scope (by using Machine scope)
-            $command="[Environment]::SetEnvironmentVariable('Path', (`$Env:Path + ';$podmanPath'), 'MACHINE')"
-            Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $command" -Verb RunAs -Wait
-            write-host "$([Environment]::GetEnvironmentVariable('Path', 'MACHINE'))"
-
-            # To use gvproxy from achived installation, Path solution does not exist
-            # See , set the helper_binaries_dir key in the `[engine]` section of containers.conf
-            # We need to either use podman_helper_dir
-
-            # store the podman installation
-            cd "$workingDir\$resultsFolder"
-            write-host "Podman installation path will be stored in $outputFile"
-            "$podmanPath" | Out-File -FilePath $outputFile -NoNewline
-        } else {
-            Write-Host "The path $podmanPath does not exist, verify downloadUrl and version"
-            Throw "Expected Podman Path: $podmanPath does not exist"
+        # To use gvproxy from achived installation, Path solution does not exist
+        # See , set the helper_binaries_dir key in the `[engine]` section of containers.conf
+        # We need to either use podman_helper_dir or place binaries at "C:\Program Files\RedHat\Podman\"
+        # For now only for hyperv
+        if (-not [string]::IsNullOrWhiteSpace($podmanProvider) -and $podmanProvider -eq "hyperv") {
+            if (-not (Test-Path -Path $podmanProgramFiles)) {
+                write-host "Copying podman binary helper files into program files..."
+                $command="New-Item -ItemType Directory -Path '$podmanProgramFiles'"
+                #Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $command" -Verb RunAs -Wait
+                Invoke-Admin-Command -Command $command -WorkingDirectory $(pwd) -Privileged "1" -TargetFolder $targetLocation
+                $commandCopy="Copy-Item -Path '$podmanPath\*' -Destination '$podmanProgramFiles'"
+                #Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $commandCopy" -Verb RunAs -Wait
+                Invoke-Admin-Command -Command $commandCopy -WorkingDirectory $(pwd) -Privileged "1" -TargetFolder $targetLocation
+            }
         }
     } elseif ($extension -eq '.exe') {
         write-host "Downloading podman setup.exe from $downloadUrl"
@@ -221,6 +220,27 @@ if (-not (Command-Exists "podman")) {
         write-host "Install Podman from setup.exe silently.."
         $process = Start-Process -FilePath "$toolsInstallDir\podman.exe" -ArgumentList "/S" -PassThru -Wait
         write-host "Install process exit code: " $process.ExitCode
+        # It seems that we need to put installed podman path on the system PATH in order for podman to be accessible in the session
+        $podmanPath=$podmanProgramFiles
+    }
+
+    if (Test-Path -Path $podmanPath) {
+        write-host "Adding Podman location: $podmanPath, on the User PATH"
+        #[System.Environment]::SetEnvironmentVariable('PATH', ([System.Environment]::GetEnvironmentVariable('PATH', 'User') + $podmanPath) -join ';', 'User')
+        $env:Path += ";$podmanPath"
+        # Make the podman available for the every scope (by using Machine scope)
+        write-host "Settings $podmanPath on PATH with Machine scope"
+        $command="[Environment]::SetEnvironmentVariable('Path', (`$Env:Path + ';$podmanPath'), 'MACHINE')"
+        Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $command" -Verb RunAs -Wait
+        write-host "$([Environment]::GetEnvironmentVariable('Path', 'MACHINE'))"
+
+        # store the podman installation
+        cd "$workingDir\$resultsFolder"
+        write-host "Podman installation path will be stored in $outputFile"
+        "'$podmanPath'" | Out-File -FilePath $outputFile -NoNewline
+    } else {
+        Write-Host "The path $podmanPath does not exist, verify downloadUrl and version"
+        Throw "Expected Podman Path: $podmanPath does not exist"
     }
 } else {
     write-host "Podman is installed"
@@ -278,7 +298,7 @@ if ($initialize -eq "1") {
     if ($start -eq "1") {
         if (-not [string]::IsNullOrWhiteSpace($podmanProvider) -and $podmanProvider -eq "hyperv") {
             Write-Host "Starting HyperV Podman Machine ..."
-            Invoke-Admin-Command -Command "podman machine start" -WorkingDirectory $thisDir -EnvVarName "CONTAINERS_MACHINE_PROVIDER" -EnvVarValue "hyperv" -Privileged "1" -TargetFolder $targetLocation
+            Invoke-Admin-Command -Command "podman machine start" -WorkingDirectory $thisDir -EnvVarName "CONTAINERS_MACHINE_PROVIDER" -EnvVarValue "hyperv" -Privileged "1" -TargetFolder $targetLocation -WaitForCommand $false
         } else {
             write-host "Starting podman machine..."
             "podman machine start" >> $logFile
