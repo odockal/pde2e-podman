@@ -9,7 +9,7 @@ The repository structure:
 * `lib` folder contains platform specific (`windows/podman.ps1`, `darwin/podman.sh`) execution scripts that are shipped using `deliverest` image into a target host machine
 * `Containerfile` is a build image configuration file that accepts `--build-args`: `OS` to determine the platform for which the particulat image is being built
 * `Makefile` build instructions for building the image using `Containerfile` and pushing it into image registry
-* `builder.sh` script that executes makefile for Windows and Mac OS platforms
+* `podman.sh` script that executes makefile for Windows and Mac OS platforms
 
 In order to push an image, user needs to be logged in before executing building scipts.
 
@@ -27,16 +27,16 @@ podman run --rm -d --name pde2e-podman-run \
   -e OUTPUT_FOLDER=/data \
   -e DEBUG=true \
   -v $PWD:/data:z \
-  quay.io/odockal/pde2e-podman:v0.0.1-windows  \
+  quay.io/odockal/pde2e-podman:v0.0.3-windows  \
     pd-e2e/podman.ps1 \
-      -downloadUrl "https://github.com/containers/podman/releases/download/v4.9.0/podman-remote-release-windows_amd64.zip" \
-      -version '4.9.0' \
+      -downloadUrl "https://github.com/containers/podman/releases/download/v5.2.5/podman-5.2.5-setup.exe" \
       -targetFolder pd-e2e \
       -resultsFolder results \
       -initialize 1 \
       -rootful 1 \
       -start 1 \
-      -userNetworking 0
+      -userNetworking 0 \
+      -podmanProvider 'hyperv'
 
 # Running the image on Mac OS
 podman run --rm -d --name pde2e-podman-run \
@@ -53,10 +53,10 @@ podman run --rm -d --name pde2e-podman-run \
             --targetFolder pd-e2e \
             --resultsFolder results \
             --downloadUrl "https://github.com/containers/podman/releases/download/v4.9.0/podman-remote-release-darwin_arm64.zip" \
-            --version '4.9.0' \
             --initialize 1 \
             --rootful 1 \
-            --start 1
+            --start 1 \
+            --podmanProvider 'libkrun'
 ```
 
 Run this image setup in order to install latest podman nightly on the host and initialize the machine in rootless mode
