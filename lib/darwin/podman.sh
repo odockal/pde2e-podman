@@ -1,5 +1,7 @@
 #!/bin/bash
 
+declare -a script_env_vars
+
 downloadUrl="https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-darwin_arm64.zip"
 version="5.2.0-dev"
 targetFolder=""
@@ -7,6 +9,7 @@ resultsFolder="results"
 initialize=0
 start=0
 rootful=0
+podmanProvider=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -17,6 +20,7 @@ while [[ $# -gt 0 ]]; do
         --initialize) initialize="$2"; shift ;;
         --start) start="$2"; shift ;;
         --rootful) rootful="$2"; shift ;;
+        --podmanProvider) podmanProvider="$2"; shift ;;
         *) ;;
     esac
     shift
@@ -49,6 +53,13 @@ outputFile="podman-location.log"
 if [ ! -d "$toolsInstallDir" ]; then
     echo "Creating dir: $toolsInstallDir"
     mkdir -p "$toolsInstallDir"
+fi
+
+# check if we have explicit podman provider env. var. added
+if [ -n "$podmanProvider" ]; then
+    echo "Settings CONTAINERS_MACHINE_PROVIDER: $podmanProvider"
+    export CONTAINERS_MACHINE_PROVIDER=$podmanProvider
+    script_env_vars+=("CONTAINERS_MACHINE_PROVIDER")
 fi
 
 # Get Podman
