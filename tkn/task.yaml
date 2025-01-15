@@ -41,7 +41,7 @@ spec:
   # PDE2E Podman parameters
   - name: image-version
     description: pde2e-podman image version
-    default: '0.0.1'
+    default: '0.0.3'
   - name: download-url
     description: in case we want to download a specific podman version. We can set up the url
     default: "''"
@@ -63,6 +63,9 @@ spec:
   - name: podman-user-networking
     description: Set userModeNetworking flag
     default: '0'
+  - name: podman-provider
+    description: A podman virtualization provider
+    default: "''"
   # Results parameters
   - name: workspace-qe-subpath
     description: subpath relative to workspace path where results are stored
@@ -117,6 +120,9 @@ spec:
         cmd="$cmd -start $(params.podman-start) "
         cmd="$cmd -rootful $(params.podman-rootful) "
         cmd="$cmd -userNetworking $(params.podman-user-networking)"
+        if [[ -n "$(params.podman-provider)" ]]; then
+          cmd="$cmd -podmanProvider $(params.podman-provider) "
+        fi
       fi
       if [[ $(params.os) == "darwin" ]]; then
         cmd="${TARGET_FOLDER}/podman.sh "
@@ -128,6 +134,9 @@ spec:
         cmd="$cmd --initialize $(params.podman-initialize) "
         cmd="$cmd --start $(params.podman-start) "
         cmd="$cmd --rootful $(params.podman-rootful)"
+        if [[ -n "$(params.podman-provider)" ]]; then
+          cmd="$cmd --podmanProvider $(params.podman-provider) "
+        fi
       fi
       
       # Exec
