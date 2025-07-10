@@ -282,6 +282,12 @@ if (-not (Command-Exists "podman")) {
         write-host "Install Podman from setup.exe silently.."
         $process = Start-Process -FilePath "$toolsInstallDir\podman.exe" -ArgumentList "/S" -PassThru -Wait
         write-host "Install process exit code: " $process.ExitCode
+        if ($process.ExitCode -eq 1618) {
+            write-host "Re-trying Podman installation later, another installation is in progress"
+            Start-Sleep -Seconds 60
+            $process = Start-Process -FilePath "$toolsInstallDir\podman.exe" -ArgumentList "/S" -PassThru -Wait
+            write-host "Second install process exit code: " $process.ExitCode
+        }
         # It seems that we need to put installed podman path on the system PATH in order for podman to be accessible in the session
         $podmanPath=$podmanProgramFiles
     }
