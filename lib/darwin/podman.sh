@@ -98,7 +98,12 @@ if ! command -v podman &> /dev/null; then
         echo "$podmanPath" > "$workingDir/$resultsFolder/$outputFile"
     fi
     # test podman on the PATH and do not throw error
-    podman version 2>&1 | grep libpod
+    which podman || true
+    podman -v
+else
+    echo "Podman is already installed on the system"
+    which podman
+    podman -v
 fi
 
 
