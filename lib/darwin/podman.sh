@@ -98,12 +98,12 @@ if ! command -v podman &> /dev/null; then
         echo "$podmanPath" > "$workingDir/$resultsFolder/$outputFile"
     fi
     # test podman on the PATH and do not throw error
-    which podman || true
-    podman -v
+    which podman
+    podman version
 else
     echo "Podman is already installed on the system"
     which podman
-    podman -v
+    podman version
 fi
 
 

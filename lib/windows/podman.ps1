@@ -312,7 +312,7 @@ if (-not (Command-Exists "podman")) {
     }
 } else {
     write-host "Podman is installed"
-    podman -v
+    podman version
 }
 
 # Set custom podman provider (wsl vs. hyperv)
