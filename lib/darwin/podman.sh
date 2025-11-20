@@ -99,11 +99,11 @@ if ! command -v podman &> /dev/null; then
     fi
     # test podman on the PATH and do not throw error
     which podman
-    podman version
+    podman -v
 else
     echo "Podman is already installed on the system"
     which podman
-    podman version
+    podman -v
 fi
 
 

@@ -72,7 +72,7 @@ spec:
     default: qe-results
   - name: results-folder
     description: directory for the junit file(s) holding the e2e results and other test artifacts
-    default: results
+    default: 'results/podman-location.log'
   # Control params
   - name: target-cleanup
     description: 'this param controls if folder on target host will be removed. Defaults true'
@@ -145,8 +145,9 @@ spec:
       # Results
       echo -n "${SECONDS}" | tee $(results.duration.path)
       # use this example to fill the value of the podmanPath into results
+      echo "Print out the content of the output folder before moving results"
       ls -R ${OUTPUT_FOLDER}
-      echo -n "$(cat ${OUTPUT_FOLDER}/${TARGET_RESULTS}/podman-location.log)" | tee $(results.podman-path.path)
+      echo -n "$(cat ${OUTPUT_FOLDER}/${TARGET_RESULTS})" | tee $(results.podman-path.path)
       
     resources:      
       requests:
