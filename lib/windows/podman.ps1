@@ -3,7 +3,7 @@ param(
     $targetFolder,
     [Parameter(HelpMessage='Results folder')]
     $resultsFolder="results",
-    [Parameter(HelpMessage = 'Podman Download URL')]
+    [Parameter(HelpMessage = 'Podman Download URL - supports .msi (recommended, Podman v5.7.0+), .exe (deprecated, will be removed in Podman v6), or .zip installer formats')]
     $downloadUrl='https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-windows_amd64.zip',
     [Parameter(HelpMessage = 'Initialize podman machine, default is 0/false')]
     $initialize='0',
@@ -290,6 +290,26 @@ if (-not (Command-Exists "podman")) {
         }
         # It seems that we need to put installed podman path on the system PATH in order for podman to be accessible in the session
         $podmanPath=$podmanProgramFiles
+    } elseif ($extension -eq '.msi') {
+        write-host "Downloading podman MSI installer from $downloadUrl"
+        Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.msi"
+        # Install MSI with system-wide scope (ALLUSERS=1) - required for HyperV compatibility
+        write-host "Installing Podman MSI silently with system-wide scope..."
+        $msiLogFile = "$targetLocation\podman-msi-install.log"
+        $msiArgs = @("/package", "$toolsInstallDir\podman.msi", "/quiet", "/qn", "ALLUSERS=1", "/l*v", $msiLogFile)
+        $process = Start-Process msiexec.exe -ArgumentList $msiArgs -Verb RunAs -PassThru -Wait
+        write-host "Install process exit code: " $process.ExitCode
+        if ($process.ExitCode -eq 1618) {
+            write-host "Re-trying Podman MSI installation later, another installation is in progress"
+            Start-Sleep -Seconds 60
+            $process = Start-Process msiexec.exe -ArgumentList $msiArgs -Verb RunAs -PassThru -Wait
+            write-host "Second install process exit code: " $process.ExitCode
+        }
+        if ($process.ExitCode -ne 0) {
+            Throw "Podman MSI installation failed with exit code: $($process.ExitCode). Check log: $msiLogFile"
+        }
+        # MSI installs to %PROGRAMFILES%\Podman (not RedHat\Podman like old .exe)
+        $podmanPath="$env:ProgramFiles\Podman\"
     }
 
     if (Test-Path -Path $podmanPath) {
