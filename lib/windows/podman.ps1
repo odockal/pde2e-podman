@@ -3,7 +3,7 @@ param(
     $targetFolder,
     [Parameter(HelpMessage='Results folder')]
     $resultsFolder="results",
-    [Parameter(HelpMessage = 'Podman Download URL')]
+    [Parameter(HelpMessage = 'Podman Download URL - supports .msi (recommended, Podman v5.7.0+), .exe (deprecated, will be removed in Podman v6), or .zip installer formats')]
     $downloadUrl='https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-windows_amd64.zip',
     [Parameter(HelpMessage = 'Initialize podman machine, default is 0/false')]
     $initialize='0',
@@ -290,6 +290,24 @@ if (-not (Command-Exists "podman")) {
         }
         # It seems that we need to put installed podman path on the system PATH in order for podman to be accessible in the session
         $podmanPath=$podmanProgramFiles
+    } elseif ($extension -eq '.msi') {
+        write-host "Downloading podman MSI installer from $downloadUrl"
+        Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.msi"
+        # Install MSI using user-scope installation (default, no admin required)
+        write-host "Installing Podman MSI silently..."
+        $msiLogFile = "$targetLocation\podman-msi.log"
+        $msiArgs = @("/package", "$toolsInstallDir\podman.msi", "/quiet", "/l*v", $msiLogFile)
+        $process = Start-Process msiexec.exe -ArgumentList $msiArgs -PassThru -Wait
+        write-host "Install process exit code: " $process.ExitCode
+        if ($process.ExitCode -ne 0) {
+            if (Test-Path $msiLogFile) {
+                write-host "MSI Installation Log:"
+                Get-Content $msiLogFile | ForEach-Object { write-host $_ }
+            }
+            Throw "Podman MSI installation failed with exit code: $($process.ExitCode). Check log above for details."
+        }
+        # MSI user-scope installation path
+        $podmanPath="$env:LOCALAPPDATA\Programs\Podman\"
     }
 
     if (Test-Path -Path $podmanPath) {
