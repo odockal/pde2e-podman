@@ -300,7 +300,11 @@ if (-not (Command-Exists "podman")) {
         $process = Start-Process msiexec.exe -ArgumentList $msiArgs -PassThru -Wait
         write-host "Install process exit code: " $process.ExitCode
         if ($process.ExitCode -ne 0) {
-            Throw "Podman MSI installation failed with exit code: $($process.ExitCode). Check log: $msiLogFile"
+            if (Test-Path $msiLogFile) {
+                write-host "MSI Installation Log:"
+                Get-Content $msiLogFile | ForEach-Object { write-host $_ }
+            }
+            Throw "Podman MSI installation failed with exit code: $($process.ExitCode). Check log above for details."
         }
         # MSI user-scope installation path
         $podmanPath="$env:LOCALAPPDATA\Programs\Podman\"
