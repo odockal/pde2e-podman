@@ -113,8 +113,9 @@ spec:
         cmd="${TARGET_FOLDER}/podman.ps1 "
         cmd="$cmd -targetFolder ${TARGET_FOLDER} "
         cmd="$cmd -resultsFolder ${TARGET_RESULTS} "
-        cmd="$cmd -downloadUrl $(params.download-url) "
-        cmd="$cmd -version $(params.podman-version) "
+        if [[ -n "$(params.download-url)" ]]; then
+          cmd="$cmd -downloadUrl $(params.download-url) "
+        fi
         cmd="$cmd -installWSL $(params.install-wsl) "
         cmd="$cmd -initialize $(params.podman-initialize) "
         cmd="$cmd -start $(params.podman-start) "
@@ -128,8 +129,12 @@ spec:
         cmd="${TARGET_FOLDER}/podman.sh "
         cmd="$cmd --targetFolder ${TARGET_FOLDER} "
         cmd="$cmd --resultsFolder ${TARGET_RESULTS} "
-        cmd="$cmd --downloadUrl $(params.download-url) "
-        cmd="$cmd --version $(params.podman-version) "
+        if [[ -n "$(params.download-url)" ]]; then
+          cmd="$cmd --downloadUrl $(params.download-url) "
+        fi
+        if [[ -n "$(params.podman-version)" ]]; then
+          cmd="$cmd --version $(params.podman-version) "
+        fi
         cmd="$cmd --installWSL $(params.install-wsl) "
         cmd="$cmd --initialize $(params.podman-initialize) "
         cmd="$cmd --start $(params.podman-start) "
@@ -167,15 +172,7 @@ spec:
     - name: RDP_USER
       value: $(params.username)
     - name: RDP_PASSWORD
-      value: $(params.userpassword)
-    script: |
-      #!/bin/sh
-      
-      # Sidecar is used to create a fake RDP connection, this is only required for windows
-      if [[ $(params.os) == "windows" ]]; then
-        . entrypoint.sh
-      fi
-      
+      value: $(params.userpassword)      
     resources:      
       requests:
         memory: "30Mi"
