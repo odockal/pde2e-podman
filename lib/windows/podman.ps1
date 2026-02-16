@@ -248,6 +248,7 @@ if (-not (Command-Exists "podman")) {
     $extension = [IO.Path]::GetExtension($downloadUrl)
     $podmanProgramFiles="$env:ProgramFiles\RedHat\Podman\"
     $podmanPath=""
+    $useUserScope=$false  # Track whether to use User or Machine scope for PATH
     if ($extension -eq '.zip') {
         $podmanFolder="podman-remote-release-windows_amd64"
         write-host "Downloading podman archive from $downloadUrl"
@@ -260,6 +261,7 @@ if (-not (Command-Exists "podman")) {
         $podmanFolderName=ls "$toolsInstallDir\podman" -Name
         write-host "Extracted Podman Installation folder found: $podmanFolderName"
         $podmanPath="$toolsInstallDir\podman\$podmanFolderName\usr\bin"
+        $useUserScope=$true  # ZIP installs to user directory
         # To use gvproxy from achived installation, Path solution does not exist
         # See , set the helper_binaries_dir key in the `[engine]` section of containers.conf
         # We need to either use podman_helper_dir or place binaries at "C:\Program Files\RedHat\Podman\"
@@ -290,6 +292,7 @@ if (-not (Command-Exists "podman")) {
         }
         # It seems that we need to put installed podman path on the system PATH in order for podman to be accessible in the session
         $podmanPath=$podmanProgramFiles
+        $useUserScope=$false  # EXE installs to Program Files (system-wide)
     } elseif ($extension -eq '.msi') {
         write-host "Downloading podman MSI installer from $downloadUrl"
         Invoke-WebRequest -Uri $downloadUrl -OutFile "$toolsInstallDir\podman.msi"
@@ -308,17 +311,31 @@ if (-not (Command-Exists "podman")) {
         }
         # MSI user-scope installation path
         $podmanPath="$env:LOCALAPPDATA\Programs\Podman\"
+        $useUserScope=$true  # MSI installs to user directory (no admin required)
     }
 
     if (Test-Path -Path $podmanPath) {
-        write-host "Adding Podman location: $podmanPath, on the User PATH"
-        #[System.Environment]::SetEnvironmentVariable('PATH', ([System.Environment]::GetEnvironmentVariable('PATH', 'User') + $podmanPath) -join ';', 'User')
+        # Add to current session PATH
         $env:Path += ";$podmanPath"
-        # Make the podman available for the every scope (by using Machine scope)
-        write-host "Settings $podmanPath on PATH with Machine scope"
-        $command="[Environment]::SetEnvironmentVariable('Path', (`$Env:Path + ';$podmanPath'), 'MACHINE')"
-        Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $command" -Verb RunAs -Wait
-        write-host "$([Environment]::GetEnvironmentVariable('Path', 'MACHINE'))"
+        
+        # Set PATH persistently based on installation type
+        if ($useUserScope) {
+            # User-scope installation (ZIP, MSI) - no admin required
+            write-host "Adding Podman location: $podmanPath, on the User PATH"
+            write-host "Setting $podmanPath on PATH with User scope"
+            $currentUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+            if (-not $currentUserPath.Contains($podmanPath)) {
+                [Environment]::SetEnvironmentVariable('Path', ($currentUserPath + ';' + $podmanPath), 'User')
+            }
+            write-host "User PATH updated: $([Environment]::GetEnvironmentVariable('Path', 'User'))"
+        } else {
+            # System-wide installation (EXE) - requires admin
+            write-host "Adding Podman location: $podmanPath, on the System PATH"
+            write-host "Setting $podmanPath on PATH with Machine scope"
+            $command="[Environment]::SetEnvironmentVariable('Path', (`$Env:Path + ';$podmanPath'), 'MACHINE')"
+            Start-Process powershell.exe -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command $command" -Verb RunAs -Wait
+            write-host "$([Environment]::GetEnvironmentVariable('Path', 'MACHINE'))"
+        }
 
         # store the podman installation
         cd "$workingDir\$resultsFolder"
