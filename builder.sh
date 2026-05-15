@@ -4,6 +4,10 @@
 OS=darwin make oci-build
 OS=darwin make oci-push
 
+# Build RHEL image
+OS=linux make oci-build
+OS=linux make oci-push
+
 # Build Windows image
 OS=windows make oci-build
 OS=windows make oci-push
