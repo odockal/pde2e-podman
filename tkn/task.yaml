@@ -31,7 +31,7 @@ spec:
   - name: key
     description: key file name to connect to the provisioned machine within the workspace resources path   
   - name: os
-    description: type of platform per target host (windows, darwin)
+    description: type of platform per target host (windows, darwin, rhel)
     default: windows
   - name: arch
     description: type of arch per target host for windows only amd64, for darwin amd64 or arm64 
@@ -41,7 +41,7 @@ spec:
   # PDE2E Podman parameters
   - name: image-version
     description: pde2e-podman image version
-    default: '0.0.3'
+    default: '0.0.4'
   - name: download-url
     description: in case we want to download a specific podman version. We can set up the url
     default: "''"
@@ -143,6 +143,14 @@ spec:
           cmd="$cmd --podmanProvider $(params.podman-provider) "
         fi
       fi
+      if [[ $(params.os) == "rhel" ]]; then
+        cmd="${TARGET_FOLDER}/podman.sh "
+        cmd="$cmd --targetFolder ${TARGET_FOLDER} "
+        cmd="$cmd --resultsFolder ${TARGET_RESULTS} "
+        if [[ -n "$(params.podman-version)" ]]; then
+          cmd="$cmd --version $(params.podman-version) "
+        fi
+      fi
       
       # Exec
       . entrypoint.sh "${cmd}"
@@ -152,7 +160,7 @@ spec:
       # use this example to fill the value of the podmanPath into results
       echo "Print out the content of the output folder before moving results"
       ls -R ${OUTPUT_FOLDER}
-      echo -n "$(cat ${OUTPUT_FOLDER}/${TARGET_RESULTS})" | tee $(results.podman-path.path)
+      echo -n "$(cat ${OUTPUT_FOLDER}/${TARGET_RESULTS}/podman-location.log)" | tee $(results.podman-path.path)
       
     resources:      
       requests:
