@@ -1,13 +1,24 @@
-FROM quay.io/rhqp/deliverest:v0.0.7
+ARG OS
+
+FROM quay.io/rhqp/deliverest:v0.0.7 AS base
 
 LABEL org.opencontainers.image.authors="Ondrej Dockal<odockal@redhat.com> Anton Misskii<amisskii@redhat.com>"
 
-# Expects one of windows, darwin, or rhel as build args
-ARG OS
-ARG ENTRYPOINT_OS
-
 ENV ASSETS_FOLDER=/opt/pde2e-podman
 
-COPY /lib/${OS}/* ${ASSETS_FOLDER}/
+FROM base AS darwin
+COPY /lib/darwin/* ${ASSETS_FOLDER}/
+ENV OS=darwin
 
-ENV OS=${ENTRYPOINT_OS}
+FROM base AS windows
+COPY /lib/windows/* ${ASSETS_FOLDER}/
+ENV OS=windows
+
+# Linux distributions
+FROM base AS linux
+ENV OS=linux
+
+FROM linux AS rhel
+COPY /lib/rhel/* ${ASSETS_FOLDER}/
+
+FROM ${OS}
