@@ -29,7 +29,7 @@ podman run --rm -d --name pde2e-podman-run \
   -v $PWD:/data:z \
   quay.io/odockal/pde2e-podman:v0.0.3-windows  \
     pd-e2e/podman.ps1 \
-      -downloadUrl "https://github.com/containers/podman/releases/download/v5.2.5/podman-5.2.5-setup.exe" \
+      -downloadUrl "https://github.com/podman-container-tools/podman/releases/download/v5.2.5/podman-5.2.5-setup.exe" \
       -targetFolder pd-e2e \
       -resultsFolder results \
       -initialize 1 \
@@ -52,7 +52,7 @@ podman run --rm -d --name pde2e-podman-run \
             pd-e2e/podman.sh \
             --targetFolder pd-e2e \
             --resultsFolder results \
-            --downloadUrl "https://github.com/containers/podman/releases/download/v4.9.0/podman-remote-release-darwin_arm64.zip" \
+            --downloadUrl "https://github.com/podman-container-tools/podman/releases/download/v4.9.0/podman-remote-release-darwin_arm64.zip" \
             --initialize 1 \
             --rootful 1 \
             --start 1 \
@@ -73,7 +73,7 @@ podman run --rm -d --name pde2e-podman-run \
   -v $PWD:/data:z \
   quay.io/odockal/pde2e-podman:v0.0.1-windows  \
     pd-e2e/podman.ps1 \
-      -downloadUrl "https://github.com/containers/podman/releases/download/v4.9.0/podman-remote-release-windows_amd64.zip" \
+      -downloadUrl "https://github.com/podman-container-tools/podman/releases/download/v4.9.0/podman-remote-release-windows_amd64.zip" \
       -version '4.9.0' \
       -targetFolder pd-e2e \
       -resultsFolder results \

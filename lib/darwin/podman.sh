@@ -2,7 +2,7 @@
 
 declare -a script_env_vars
 
-downloadUrl="https://api.cirrus-ci.com/v1/artifact/github/containers/podman/Artifacts/binary/podman-remote-release-darwin_arm64.zip"
+downloadUrl="https://api.cirrus-ci.com/v1/artifact/github/podman-container-tools/podman/Artifacts/binary/podman-remote-release-darwin_arm64.zip"
 version="5.2.0-dev"
 targetFolder=""
 resultsFolder="results"
